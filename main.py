@@ -10,6 +10,10 @@ app = FastAPI()
 #     restrictions = List[Tuple[Tuple[int],str,int]]
 
 @app.get("/")
+def get_root():
+    return {"Simplex method":"API"}
+
+@app.get("/standard-model")
 def standard_model(body: dict = Body(...)):
     n_variables = body["n_variables"]
 
