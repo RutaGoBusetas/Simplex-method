@@ -1,5 +1,4 @@
 from fastapi import FastAPI, Body
-from typing import Tuple, List
 from simplex import Simplex
 import ast
 
