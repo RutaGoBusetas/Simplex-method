@@ -1,8 +1,16 @@
 from fastapi import FastAPI, Body
 from simplex import Simplex
+from fastapi.middleware.cors import CORSMiddleware
 import ast
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 # class body:
 #     n_variables: int
@@ -13,7 +21,7 @@ app = FastAPI()
 def get_root():
     return {"Simplex method":"API"}
 
-@app.get("/standard-model")
+@app.post("/standard-model")
 def standard_model(body: dict = Body(...)):
     n_variables = body["n_variables"]
 

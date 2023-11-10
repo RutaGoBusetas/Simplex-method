@@ -17,7 +17,7 @@ class Simplex():
 
         self.A, self.C = [],[]
         self.b = [r[-1] for r in self.rest]
-        self.x = ["x"+str(i) for i in range(self.n_var)]
+        self.x = ["x"+str(i+1) for i in range(self.n_var)]
         self.fill_A_C()
         self.A = np.array(self.A)
         # print('A matrix:')
