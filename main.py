@@ -16,11 +16,13 @@ class Simplex():
         }
 
         self.A, self.C = [],[]
+        self.b = [r[-1] for r in self.rest]
+        self.x = ["x"+str(i) for i in range(self.n_var)]
         self.fill_A_C()
         self.A = np.array(self.A)
-        print('A matrix:')
-        print(self.A)
-        print(f'C vector: {self.C}\n')
+        # print('A matrix:')
+        # print(self.A)
+        # print(f'C vector: {self.C}\n')
 
         prob = obj_funct[0].lower()
         if prob == "min": self.max = False
@@ -47,9 +49,10 @@ class Simplex():
             )
         
         self.C = [value for value in self.obj_funct[-1]] + [0 for value in s_values if value is not None] + [-800 for value in m_values if value is not None]
+        self.x.extend("S"+str(i) for i in range(len(s_values)) if s_values[i] is not None)
+        self.x.extend("u"+str(i) for i in range(len(m_values)) if m_values[i] is not None)
 
     def solve(self):
-        b = [r[-1] for r in self.rest]
         X_b = [] 
         for row in range(len(self.A)):
             for col in range(len(self.A[row])):
@@ -83,11 +86,11 @@ class Simplex():
             print(f'\nCb_invB_A: {Cb_invB_A}')
             print(f'r: {r}')
 
-            z = np.dot((np.dot(np.transpose(C_b),inv_B)),b)
+            z = np.dot((np.dot(np.transpose(C_b),inv_B)),self.b)
             print(f'z value: {z}')
 
 
-            invB_b = np.dot(inv_B, b)
+            invB_b = np.dot(inv_B, self.b)
             
             
             if self.max:
@@ -113,7 +116,8 @@ class Simplex():
             X_b[out_var] = in_var
             iter+=1
 
-        return invB_b[:self.n_var]
+        result = [invB_b[i] for i in range(len(X_b)) if X_b[i] in range(self.n_var)]
+        return result
         
 
 
@@ -157,5 +161,5 @@ if __name__ == '__main__':
     ]
 
     solver = Simplex(n_variables, obj_funct, restrictions)
+    # print(solver.)
     print(f'\n\nsolution: {solver.solve()}')
-    
