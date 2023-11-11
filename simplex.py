@@ -49,8 +49,8 @@ class Simplex():
             )
         
         self.C = [value for value in self.obj_funct[-1]] + [0 for value in s_values if value is not None] + [-800 for value in m_values if value is not None]
-        self.x.extend("S"+str(i) for i in range(len(s_values)) if s_values[i] is not None)
-        self.x.extend("u"+str(i) for i in range(len(m_values)) if m_values[i] is not None)
+        self.x.extend("S"+str(i+1) for i in range(len(s_values)) if s_values[i] is not None)
+        self.x.extend("u"+str(i+1) for i in range(len(m_values)) if m_values[i] is not None)
 
     def solve(self):
         X_b = [] 
