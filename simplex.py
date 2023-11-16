@@ -7,6 +7,7 @@ class Simplex():
         self.obj_funct = obj_funct
         self.rest = rest        
         self.z = 0
+        self.iterations = []
 
         # index 0 referes to s value and index 1 referes to m value
         self.ineq = {
@@ -18,16 +19,18 @@ class Simplex():
         self.A, self.C = [],[]
         self.b = [r[-1] for r in self.rest]
         self.x = ["x"+str(i+1) for i in range(self.n_var)]
-        self.fill_A_C()
-        self.A = np.array(self.A)
-        # print('A matrix:')
-        # print(self.A)
-        # print(f'C vector: {self.C}\n')
 
         prob = obj_funct[0].lower()
         if prob == "min": self.max = False
         elif prob == "max": self.max = True
         else: raise Exception("Unknown procedure")
+
+        self.fill_A_C()
+        self.A = np.array(self.A)
+        self.result = {}
+        # print('A matrix:')
+        # print(self.A)
+        # print(f'C vector: {self.C}\n') 
 
     def fill_A_C(self):
         params_value,s_values, m_values = [], [],[]
@@ -48,7 +51,8 @@ class Simplex():
                 [1 if i==j else 0 for j in range(len(m_values)) if m_values[j] is not None]
             )
         
-        self.C = [value for value in self.obj_funct[-1]] + [0 for value in s_values if value is not None] + [-800 for value in m_values if value is not None]
+        m_sign = -1 if self.max else 1
+        self.C = [value for value in self.obj_funct[-1]] + [0 for value in s_values if value is not None] + [m_sign*800 for value in m_values if value is not None]
         self.x.extend("S"+str(i+1) for i in range(len(s_values)) if s_values[i] is not None)
         self.x.extend("u"+str(i+1) for i in range(len(m_values)) if m_values[i] is not None)
 
@@ -83,6 +87,12 @@ class Simplex():
             invB_A = np.dot(inv_B, self.A)
             Cb_invB_A = np.dot(C_b,invB_A)
             r = np.round(Cb_invB_A-self.C,4)
+
+            if 0 in [r[i] for i in range(len(r)) if i not in X_b]:
+                print("Multiple Solution Case :c")
+                self.iterations.append([X_b,None,None,r,False,None,None])
+                return -2
+
             print(f'\nCb_invB_A: {Cb_invB_A}')
             print(f'r: {r}')
 
@@ -91,33 +101,57 @@ class Simplex():
 
 
             invB_b = np.dot(inv_B, self.b)
-            
-            
+            if 0 in invB_b:
+                print("Degenerate point :c")
+                self.iterations.append([X_b,z,invB_b,r,False,None,None])
+                return -1
+
             if self.max:
-                if not any(r<0):
+                if not any(r<0): 
+                    self.iterations.append([X_b,z,invB_b,r,False,None,None])
                     break
-                else:
-                    in_var = np.argmin(r)
-                    aux = invB_A[:,in_var]
-                    out_var = np.nanargmin(np.divide(invB_b,aux, out=np.full_like(invB_b, np.nan), where=aux>0))
+                else:   in_var = np.argmin(r)
             else:
-                if not any(r>0):
+                if not any(r>0): 
+                    self.iterations.append([X_b,z,invB_b,r,False,None,None])
                     break
-                else:
-                    in_var = np.argmax(r)
-                    aux = invB_A[:,in_var]
-                    # print(invB_b)
-                    # print(aux)
-                    # print(np.divide(invB_b,aux, out=np.full_like(invB_b, np.nan), where=aux>0 ))
-                    out_var = np.nanargmax(np.divide(invB_b,aux, out=np.full_like(invB_b, np.nan), where=aux<0 ))
+                else: in_var = np.argmax(r)
+
+            aux = invB_A[:,in_var]
+            try:
+                out_var = np.nanargmin(np.divide(invB_b,aux, out=np.full_like(invB_b, np.nan), where=aux>0 ))
+            except:
+                print("No bounded solution")
+                self.iterations.append([X_b,z,invB_b,r,False,in_var,None])
+                return -3
 
             print(f'out var: {out_var}')
             print(f'in var: {in_var}')
+            print("************************Prueba:",X_b)
+            self.iterations.append([X_b.copy(),z,invB_b,r,True,in_var,out_var])
             X_b[out_var] = in_var
             iter+=1
+        
+        m_min_index = self.n_var+ len(self.rest)
+        for i in X_b:
+            if i >= m_min_index:
+                print("incompatible problem :c")
+                return -4
+            
+        for i in range(self.n_var):
+            try:
+                self.result["x"+str(i)] = invB_b[X_b.index(i)]
+            except:
+                self.result["x"+str(i)] = 0
 
-        result = [invB_b[i] for i in range(len(X_b)) if X_b[i] in range(self.n_var)]
-        return result
+        print(invB_b)
+        print("X_b:")
+        print(X_b)
+        print("variables en X_b:")
+        for i in X_b:
+            print(self.x[i])
+
+        return self.result
         
 
 
@@ -151,15 +185,64 @@ if __name__ == '__main__':
 
     ################################
 
+    # n_variables = 2
+
+    # obj_funct = ('max',(5, 8))
+    # restrictions = [
+    #     ((6,5), '<=',30),
+    #     ((0,1), '>=', 1),
+    #     ((-2,2), '<=', 6)
+    # ]
+
+    # Punto degenerao
+    ################################
+
+    # n_variables = 2
+
+    # obj_funct = ('max',(6, 4))
+    # restrictions = [
+    #     ((1,2), '<=',24),
+    #     ((2,1), '<=', 30),
+    #     ((1,0), '<=', 15)
+    # ]
+
+    # Soluciones Multiples
+    ################################
+
     n_variables = 2
 
-    obj_funct = ('max',(5, 8))
+    obj_funct = ('max',(4, 4))
     restrictions = [
-        ((6,5), '<=',30),
-        ((0,1), '>=', 1),
-        ((-2,2), '<=', 6)
+        ((1,0), '<=',6),
+        ((1,1), '<=', 8),
+        ((1,2), '<=', 12)
     ]
 
+    # Poliedro abierto - Soluciones Multiples
+    ################################
+
+    # n_variables = 2
+
+    # obj_funct = ('max',(1, 8))
+    # restrictions = [
+    #     ((0,1), '>=', 2),
+    #     ((4,6), '>=', 24),
+    #     ((10, -30), '>=', 30)
+    # ]
+
+    # Incompatible 
+    ################################
+
+    # n_variables = 2
+
+    # obj_funct = ('max',(3, 1))
+    # restrictions = [
+    #     ((1,1), '<=', 6),
+    #     ((2,1), '<=', 1),
+    #     ((-1, 2), '>=', 8)
+    # ]
+
     solver = Simplex(n_variables, obj_funct, restrictions)
-    # print(solver.)
     print(f'\n\nsolution: {solver.solve()}')
+    for iteration in solver.iterations:
+        print(iteration)
