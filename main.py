@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Body, HTTPException
 from simplex import Simplex
+import os
 from fastapi.middleware.cors import CORSMiddleware
 import ast
 
+port = int(os.getenv("PORT", 8000))
 app = FastAPI()
 solver = None
 app.add_middleware(
@@ -51,6 +53,9 @@ def get_solution():
         "X_b":X_b, "Z":Z, "InvB_b":invB_b, "r":r, "iterando":iterando,
         "in_var":in_var, "out_var": out_var}, "special_case":special_case}
 
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=port)
 # BODY:
 # {
 #   "n_variables" : 2,
